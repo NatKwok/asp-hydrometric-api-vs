@@ -2,6 +2,7 @@
 using System.Text.Json;
 using GeoJSON.Text.Feature;
 using Newtonsoft.Json;
+using GeoJSON.Text.Geometry;
 
 namespace asp_hydrometric_api_vs
 {
@@ -15,13 +16,13 @@ namespace asp_hydrometric_api_vs
 
         public static Feature CreatePointFeature(double latitude, double longitude, Dictionary<string, object> properties)
         {
-            var point = new GeoJSON.Text.Geometry.Point(new GeoJSON.Text.Geometry.Position(latitude, longitude));
+            var point = new Point(new Position(latitude, longitude));
             return new Feature(point, properties);
         }
 
         public static Feature CreateLineStringFeature(List<Position> coordinates, Dictionary<string, object> properties)
         {
-            var lineString = new GeoJSON.Text.Geometry.LineString(new GeoJSON.Text.Ge)
+            var lineString = new LineString(coordinates);
             return new Feature(lineString, properties);
         }
 
