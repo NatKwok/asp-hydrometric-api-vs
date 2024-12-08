@@ -6,6 +6,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using asp_hydrometric_api_vs.Models;
+using Microsoft.Build.Framework;
+using Newtonsoft.Json;
+using GeoJSON.Text.Feature;
+using GeoJSON.Text.Geometry;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace asp_hydrometric_api_vs.Controllers
 {
@@ -24,7 +29,46 @@ namespace asp_hydrometric_api_vs.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<HydrometricAnnualPeak>>> GetHydrometricAnnualPeaks()
         {
-            return await _context.HydrometricAnnualPeaks.ToListAsync();
+            var feature = await _context.HydrometricAnnualPeaks.ToListAsync();
+
+            // Step 2: Map data to GeoJSON Features
+            var features = feature.Select(record =>
+            {
+
+                // Check if Geom is not null
+                if (record.Geom == null)
+                {
+                    // Handle cases where Geom is null (e.g., skip the record or provide a default value)
+                    return null;
+                }
+
+                // Replace with the actual fields for latitude and longitude in your model
+                var latitude = record.Geom.X;
+                var longitude = record.Geom.Y;
+
+                // Create a GeoJSON Point geometry
+                var point = new GeoJSON.Text.Geometry.Point(new GeoJSON.Text.Geometry.Position(latitude, longitude));
+
+                // Add additional properties from your model
+                var properties = new Dictionary<string, object>
+                    {
+                        { "Id", record.Id },
+                        { "Name", record.StationName }, // Example field
+                        { "Peak", record.Peak } // Example field
+                    };
+
+                // Create a GeoJSON Feature
+                return new GeoJSON.Text.Feature.Feature(point, properties);
+            }).ToList();
+
+            // Step 3: Create a FeatureCollection
+            var featureCollection = new GeoJSON.Text.Feature.FeatureCollection(features);
+
+            // Step 4: Serialize to GeoJSON
+            var geoJson = JsonConvert.SerializeObject(featureCollection);
+
+            // Return GeoJSON with appropriate content type
+            return Content(geoJson, "application/json");
         }
 
         // GET: api/Hydrometric/5
