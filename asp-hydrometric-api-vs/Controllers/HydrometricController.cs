@@ -12,6 +12,7 @@ using GeoJSON.Text.Feature;
 using GeoJSON.Text.Geometry;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
+
 namespace asp_hydrometric_api_vs.Controllers
 {
     [Route("api/[controller]")]
@@ -31,7 +32,7 @@ namespace asp_hydrometric_api_vs.Controllers
         {
             var feature = await _context.HydrometricAnnualPeaks.ToListAsync();
 
-            // Step 2: Map data to GeoJSON Features
+            //Map data to GeoJSON Features
             var features = feature.Select(record =>
             {
 
@@ -47,7 +48,7 @@ namespace asp_hydrometric_api_vs.Controllers
                 var longitude = record.Geom.Y;
 
                 // Create a GeoJSON Point geometry
-                var point = new GeoJSON.Text.Geometry.Point(new GeoJSON.Text.Geometry.Position(latitude, longitude));
+                var point = new Point(new Position(latitude, longitude));
 
                 // Add additional properties from your model
                 var properties = new Dictionary<string, object>
@@ -58,13 +59,13 @@ namespace asp_hydrometric_api_vs.Controllers
                     };
 
                 // Create a GeoJSON Feature
-                return new GeoJSON.Text.Feature.Feature(point, properties);
+                return new Feature(point, properties);
             }).ToList();
 
-            // Step 3: Create a FeatureCollection
-            var featureCollection = new GeoJSON.Text.Feature.FeatureCollection(features);
+            //Create a FeatureCollection
+            var featureCollection = new FeatureCollection(features);
 
-            // Step 4: Serialize to GeoJSON
+            //Serialize to GeoJSON
             var geoJson = JsonConvert.SerializeObject(featureCollection);
 
             // Return GeoJSON with appropriate content type
@@ -75,15 +76,44 @@ namespace asp_hydrometric_api_vs.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<HydrometricAnnualPeak>> GetHydrometricAnnualPeak(string id)
         {
-            var hydrometricAnnualPeak = await _context.HydrometricAnnualPeaks.FindAsync(id);
+            var feature = await _context.HydrometricAnnualPeaks.FindAsync(id);
 
-            if (hydrometricAnnualPeak == null)
+            if (feature == null)
             {
                 return NotFound();
             }
 
-            return hydrometricAnnualPeak;
+                // Check if Geom is not null
+                if (feature.Geom == null)
+                {
+                    // Handle cases where Geom is null (e.g., skip the record or provide a default value)
+                    return null;
+                }
+
+                // Replace with the actual fields for latitude and longitude in your model
+                var latitude = feature.Geom.X;
+                var longitude = feature.Geom.Y;
+
+                // Create a GeoJSON Point geometry
+                var point = new Point(new Position(latitude, longitude));
+
+                // Add additional properties from your model
+                var properties = new Dictionary<string, object>
+                    {
+                        { "Id", feature.Id },
+                        { "Name", feature.StationName }, // Example field
+                        { "Peak", feature.Peak } // Example field
+                    };
+
+            var features = new Feature(point, properties);
+
+            //Serialize to GeoJSON
+            var geoJson = JsonConvert.SerializeObject(features);
+
+            // Return GeoJSON with appropriate content type
+            return Content(geoJson, "application/json");
         }
+
 
         // PUT: api/Hydrometric/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
